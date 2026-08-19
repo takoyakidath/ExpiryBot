@@ -30,9 +30,13 @@ export async function runNotifyJob(deps: NotifyJobDeps, now: Date = new Date()):
     const label = isOverdue ? '⚠️期限切れ: ' : '';
     const text = `${label}${item.name}(賞味期限: ${formatJapaneseDate(item.expiryDate)})`;
 
-    const sent = await deps.channel.send(text);
-    await sent.react('✅');
-    deps.mappingStore.saveMapping(sent.id, item.pageId);
+    try {
+      const sent = await deps.channel.send(text);
+      deps.mappingStore.saveMapping(sent.id, item.pageId);
+      await sent.react('✅');
+    } catch (error) {
+      console.error(`Failed to notify for souvenir ${item.pageId}`, error);
+    }
   }
 }
 

@@ -130,4 +130,107 @@ describe('runNotifyJob', () => {
       }),
     );
   });
+
+  it('saves the mapping even when react() rejects for that item', async () => {
+    const notionClient = fakeNotionClient([
+      {
+        id: 'page-1',
+        properties: {
+          商品名: { title: [{ plain_text: '八つ橋' }] },
+          賞味期限: { date: { start: '2026-09-05' } },
+          ステータス: { select: { name: '未消費' } },
+        },
+      },
+    ]);
+    const channel: NotifiableChannel & { sent: string[] } = {
+      sent: [],
+      send: vi.fn(async (content: string) => {
+        channel.sent.push(content);
+        const message: SendableMessage = {
+          id: 'msg-1',
+          react: vi.fn(async () => {
+            throw new Error('missing Add Reactions permission');
+          }),
+        };
+        return message;
+      }),
+    };
+    mappingStore = new MappingStore(':memory:');
+
+    await runNotifyJob(
+      { notionClient, databaseId: 'db-1', channel, mappingStore, reminderDays: 7 },
+      new Date(2026, 8, 1),
+    );
+
+    expect(mappingStore.getNotionPageId('msg-1')).toBe('page-1');
+  });
+
+  it("processes subsequent items even when an earlier item's send/react throws", async () => {
+    const notionClient = fakeNotionClient([
+      {
+        id: 'page-1',
+        properties: {
+          商品名: { title: [{ plain_text: '八つ橋' }] },
+          賞味期限: { date: { start: '2026-09-05' } },
+          ステータス: { select: { name: '未消費' } },
+        },
+      },
+      {
+        id: 'page-2',
+        properties: {
+          商品名: { title: [{ plain_text: 'もみじ饅頭' }] },
+          賞味期限: { date: { start: '2026-09-06' } },
+          ステータス: { select: { name: '未消費' } },
+        },
+      },
+    ]);
+    let callCount = 0;
+    const channel: NotifiableChannel & { sent: string[] } = {
+      sent: [],
+      send: vi.fn(async (content: string) => {
+        callCount += 1;
+        if (callCount === 1) {
+          throw new Error('failed to send first message');
+        }
+        channel.sent.push(content);
+        const message: SendableMessage = {
+          id: `msg-${callCount}`,
+          react: vi.fn(async () => {}),
+        };
+        return message;
+      }),
+    };
+    mappingStore = new MappingStore(':memory:');
+
+    await runNotifyJob(
+      { notionClient, databaseId: 'db-1', channel, mappingStore, reminderDays: 7 },
+      new Date(2026, 8, 1),
+    );
+
+    expect(channel.sent).toEqual([expect.stringContaining('もみじ饅頭')]);
+    expect(mappingStore.getNotionPageId('msg-2')).toBe('page-2');
+  });
+
+  it('does not label an item expiring exactly today as overdue', async () => {
+    const notionClient = fakeNotionClient([
+      {
+        id: 'page-1',
+        properties: {
+          商品名: { title: [{ plain_text: '八つ橋' }] },
+          賞味期限: { date: { start: '2026-09-01' } },
+          ステータス: { select: { name: '未消費' } },
+        },
+      },
+    ]);
+    const channel = fakeChannel();
+    mappingStore = new MappingStore(':memory:');
+
+    await runNotifyJob(
+      { notionClient, databaseId: 'db-1', channel, mappingStore, reminderDays: 7 },
+      new Date(2026, 8, 1),
+    );
+
+    expect(channel.sent[0]).toContain('八つ橋');
+    expect(channel.sent[0]).not.toContain('⚠️期限切れ');
+  });
 });
