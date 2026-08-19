@@ -24,7 +24,7 @@ describe('reactionHandler', () => {
     const handle = createReactionHandler({ notionClient, mappingStore });
 
     await handle(
-      { emoji: { name: '✅' }, message: { id: 'msg-1' } },
+      { emoji: { name: '✅' }, message: { id: 'msg-1', react: vi.fn(async () => {}) } },
       { id: 'user-1', bot: false },
     );
 
@@ -41,7 +41,7 @@ describe('reactionHandler', () => {
     const handle = createReactionHandler({ notionClient, mappingStore });
 
     await handle(
-      { emoji: { name: '✅' }, message: { id: 'msg-1' } },
+      { emoji: { name: '✅' }, message: { id: 'msg-1', react: vi.fn(async () => {}) } },
       { id: 'bot-1', bot: true },
     );
 
@@ -55,7 +55,7 @@ describe('reactionHandler', () => {
     const handle = createReactionHandler({ notionClient, mappingStore });
 
     await handle(
-      { emoji: { name: '👍' }, message: { id: 'msg-1' } },
+      { emoji: { name: '👍' }, message: { id: 'msg-1', react: vi.fn(async () => {}) } },
       { id: 'user-1', bot: false },
     );
 
@@ -68,10 +68,30 @@ describe('reactionHandler', () => {
     const handle = createReactionHandler({ notionClient, mappingStore });
 
     await handle(
-      { emoji: { name: '✅' }, message: { id: 'unmapped-message' } },
+      { emoji: { name: '✅' }, message: { id: 'unmapped-message', react: vi.fn(async () => {}) } },
       { id: 'user-1', bot: false },
     );
 
     expect(notionClient.pages.update).not.toHaveBeenCalled();
+  });
+
+  it('reacts with ❌ and does not throw when markConsumed rejects', async () => {
+    const notionClient = fakeNotionClient();
+    notionClient.pages.update = vi.fn(async () => {
+      throw new Error('Notion is down');
+    });
+    mappingStore = new MappingStore(':memory:');
+    mappingStore.saveMapping('msg-1', 'page-1');
+    const handle = createReactionHandler({ notionClient, mappingStore });
+    const react = vi.fn(async () => {});
+
+    await expect(
+      handle(
+        { emoji: { name: '✅' }, message: { id: 'msg-1', react } },
+        { id: 'user-1', bot: false },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(react).toHaveBeenCalledWith('❌');
   });
 });

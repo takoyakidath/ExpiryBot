@@ -9,6 +9,7 @@ export interface ReactableUser {
 
 export interface ReactableMessage {
   id: string;
+  react: (emoji: string) => Promise<unknown>;
 }
 
 export interface ReactionLike {
@@ -32,6 +33,11 @@ export function createReactionHandler(deps: ReactionHandlerDeps) {
     const pageId = deps.mappingStore.getNotionPageId(reaction.message.id);
     if (!pageId) return;
 
-    await markConsumed(deps.notionClient, pageId);
+    try {
+      await markConsumed(deps.notionClient, pageId);
+    } catch (error) {
+      console.error('Failed to mark souvenir as consumed', error);
+      await reaction.message.react('❌').catch(() => {});
+    }
   };
 }
