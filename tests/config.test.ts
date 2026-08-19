@@ -37,6 +37,18 @@ describe('loadConfig', () => {
     expect(config.mappingDbPath).toBe('/data/custom.sqlite');
   });
 
+  it('throws when REMINDER_DAYS is a non-numeric string', () => {
+    expect(() => loadConfig({ ...baseEnv, REMINDER_DAYS: 'abc' })).toThrow(/REMINDER_DAYS/);
+  });
+
+  it('throws when NOTIFY_CRON is an invalid cron expression', () => {
+    expect(() => loadConfig({ ...baseEnv, NOTIFY_CRON: 'not a cron' })).toThrow(/NOTIFY_CRON/);
+  });
+
+  it('throws when TZ is an invalid timezone name', () => {
+    expect(() => loadConfig({ ...baseEnv, TZ: 'Not/AZone' })).toThrow(/TZ/);
+  });
+
   it('maps required variables through unchanged', () => {
     const config = loadConfig(baseEnv);
     expect(config.discordToken).toBe('discord-token');
