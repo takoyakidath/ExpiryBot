@@ -11,6 +11,7 @@ import { createReactionHandler } from './discord/reactionHandler.js';
 import { runNotifyJob } from './discord/notifyJob.js';
 
 const config = loadConfig();
+process.env.TZ = config.timezone;
 
 fs.mkdirSync(path.dirname(config.mappingDbPath), { recursive: true });
 const mappingStore = new MappingStore(config.mappingDbPath);
