@@ -26,7 +26,7 @@
 
 1. https://discord.com/developers/applications でBotを作成する
 2. 「Bot」設定で `MESSAGE CONTENT INTENT` を有効化する
-3. OAuth2 URL Generatorで `bot` スコープ、`Send Messages` / `Read Message History` / `Add Reactions` 権限を選び、サーバーに招待する
+3. OAuth2 URL Generatorで `bot` スコープ、`View Channel` / `Send Messages` / `Read Message History` / `Add Reactions` 権限を選び、サーバーに招待する
 4. 登録専用チャンネルと通知先チャンネルのIDを控える(開発者モードを有効にして右クリック→IDをコピー)
 
 ### 3. 環境変数
@@ -46,6 +46,8 @@ MAPPING_DB_PATH=./data/mapping.sqlite
 ```
 
 ## ローカル実行
+
+Node.js 22以上が必要(`better-sqlite3` のビルドに必要)。
 
 ```bash
 npm install
