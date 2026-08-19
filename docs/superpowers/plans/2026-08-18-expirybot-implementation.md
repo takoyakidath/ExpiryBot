@@ -6,13 +6,13 @@
 
 **Architecture:** A TypeScript/Node.js process using discord.js for Discord I/O, the Notion SDK for persistence, a local SQLite file to map Discord notification messages to Notion pages (so reactions can resolve back to the right item), and node-cron for the daily reminder job. Each concern (date parsing, message parsing, Notion access, mapping storage, Discord event handlers) lives in its own small, independently testable module, wired together in `src/index.ts`.
 
-**Tech Stack:** TypeScript, Node.js 18+, discord.js v14, @notionhq/client, better-sqlite3, node-cron, dotenv, vitest (tests), Docker for deployment.
+**Tech Stack:** TypeScript, Node.js 22+, discord.js v14, @notionhq/client, better-sqlite3, node-cron, dotenv, vitest (tests), Docker for deployment.
 
 **Spec:** `docs/superpowers/specs/2026-08-18-expirybot-design.md`
 
 ## Global Constraints
 
-- Node.js >= 18, TypeScript with `strict: true`.
+- Node.js >= 22 (raised from the original >=18 during Task 1's review — better-sqlite3's only version that builds on modern Node requires >=22; see SDD ledger), TypeScript with `strict: true`.
 - Only the dedicated `REGISTER_CHANNEL_ID` channel is monitored for registrations; all other channels are ignored.
 - Notion database properties are exactly: `商品名` (title), `賞味期限` (date), `ステータス` (select: `未消費`/`消費済み`), `登録者` (rich_text), `元メッセージ` (url). Created time is Notion's automatic property, not written by the app.
 - Date parser supports, in priority order: `YYYY年M月D日`, `YYYY/M/D` or `YYYY-M-D`, `M月D日`, `M/D`. Year-less dates before today roll to next year.
@@ -89,7 +89,7 @@ Each Discord/Notion-facing module defines a small structural ("Xxx-Like") interf
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -100,7 +100,7 @@ Each Discord/Notion-facing module defines a small structural ("Xxx-Like") interf
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "^13.0.0",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
     "node-cron": "^3.0.3"
@@ -1889,7 +1889,7 @@ Expected: all tests across every task pass.
 - [ ] **Step 4: Create `Dockerfile`**
 
 ```dockerfile
-FROM node:20-slim
+FROM node:22-slim
 
 WORKDIR /app
 
